@@ -30,6 +30,7 @@
 /* private */
 /* prototypes */
 static int _error(char const * message);
+static int _usage(void);
 
 
 /* public */
@@ -37,29 +38,45 @@ static int _error(char const * message);
 /* main */
 int main(int argc, char * argv[])
 {
-	char const * pidfile = "/var/run/mpvd.pid";
-	const int daemonize = 1;
 	const uid_t uid = 502;
 	const gid_t gid = 502;
+	char const * pidfile = "/var/run/" PROGNAME_MPVD ".pid";
+	int o;
+	int daemonize = 1;
 	FILE * fp;
 
-	if(daemonize && daemon(0, 0) != 0)
+	while((o = getopt(argc, argv, "Fp:")) != -1)
+		switch(o)
+		{
+			case 'F':
+				daemonize = 0;
+				break;
+			case 'p':
+				pidfile = optarg;
+				break;
+			default:
+				return _usage();
+		}
+	if(optind == argc)
+		return _usage();
+	if(daemonize)
 	{
-		return _error("daemon");
-	}
-	if((fp = fopen(pidfile, "w")) == NULL)
-		_error(pidfile);
-	else
-	{
-		fprintf(fp, "%u\n", getpid());
-		if(fclose(fp) != 0)
+		if(daemon(0, 0) != 0)
+			return _error("daemon");
+		if((fp = fopen(pidfile, "w")) == NULL)
 			_error(pidfile);
+		else
+		{
+			fprintf(fp, "%u\n", getpid());
+			if(fclose(fp) != 0)
+				_error(pidfile);
+		}
+		if(setegid(gid) != 0)
+			_error("setegid");
+		if(seteuid(uid) != 0)
+			_error("seteuid");
 	}
-	if(setegid(gid) != 0)
-		_error("setegid");
-	if(seteuid(uid) != 0)
-		_error("seteuid");
-	return mpvd(argc, argv);
+	return mpvd(argc - optind, &argv[optind]);
 }
 
 
@@ -72,4 +89,14 @@ static int _error(char const * message)
 			(message != NULL) ? message : "",
 			strerror(errno));
 	return 2;
+}
+
+
+/* usage */
+static int _usage(void)
+{
+	fputs("Usage: " PROGNAME_MPVD " [-F][-p filename] file...\n"
+			"  -F	Run in foreground\n"
+			"  -p	Set the PID file\n", stderr);
+	return 1;
 }
