@@ -1,3 +1,19 @@
+/* $Id$ */
+/* Copyright (c) 2020 Pierre Pronchery <khorben@defora.org> */
+/* This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>. */
+
+
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,8 +26,15 @@
 #endif
 
 
+/* main */
+/* private */
+/* prototypes */
 static int _error(char const * message);
 
+
+/* public */
+/* functions */
+/* main */
 int main(int argc, char * argv[])
 {
 	char const * pidfile = "/var/run/mpvd.pid";
@@ -39,6 +62,9 @@ int main(int argc, char * argv[])
 	return mpvd(argc, argv);
 }
 
+
+/* private */
+/* functions */
 static int _error(char const * message)
 {
 	fprintf(stderr, "%s%s%s: %s\n", PROGNAME_MPVD,

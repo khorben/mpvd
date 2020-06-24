@@ -1,3 +1,19 @@
+/* $Id$ */
+/* Copyright (c) 2020 Pierre Pronchery <khorben@defora.org> */
+/* This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>. */
+
+
+
 #include <stdio.h>
 #include <mpv/client.h>
 #include "mpvd.h"
@@ -7,9 +23,16 @@
 #endif
 
 
+/* mpvd */
+/* private */
+/* prototypes */
 static int _mpvd_error(int error, char const * message);
 static int _mpvd_event(mpv_handle * mpv, mpv_event * event);
 
+
+/* public */
+/* functions */
+/* mpvd */
 int mpvd(int filec, char * filev[])
 {
 	mpv_handle * mpv;
@@ -40,6 +63,9 @@ int mpvd(int filec, char * filev[])
 	return 0;
 }
 
+
+/* private */
+/* mpvd_error */
 static int _mpvd_error(int error, char const * message)
 {
 	fprintf(stderr, "%s%s%s: %s\n", PROGNAME_MPVD,
@@ -49,6 +75,8 @@ static int _mpvd_error(int error, char const * message)
 	return 2;
 }
 
+
+/* mpvd_event */
 static int _mpvd_event(mpv_handle * mpv, mpv_event * event)
 {
 	mpv_event_log_message * log_message;
