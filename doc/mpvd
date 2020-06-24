@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# PROVIDE: mpvd
+# REQUIRE: DAEMON
+
+$_rc_subr_loaded . /etc/rc.subr
+
+name="mpvd"
+rcvar=$name
+command="/usr/local/bin/${name}"
+pidfile="/var/run/${name}.pid"
+
+load_rc_config $name
+run_rc_command "$1"
