@@ -14,7 +14,13 @@
 
 
 
+#include <unistd.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <grp.h>
+#include <pwd.h>
+#include <errno.h>
 #include <mpv/client.h>
 #include "mpvd.h"
 
@@ -23,17 +29,19 @@
 #endif
 
 
-/* mpvd */
+/* MPVD */
 /* private */
 /* prototypes */
-static int _mpvd_error(int error, char const * message);
+static int _mpvd_error(char const * message);
+static int _mpvd_error_mpv(int error, char const * message);
 static int _mpvd_event(mpv_handle * mpv, mpv_event * event);
+static int _mpvd_prefs(MPVDPrefs * prefs);
 
 
 /* public */
 /* functions */
 /* mpvd */
-int mpvd(int filec, char * filev[])
+int mpvd(MPVDPrefs * prefs, int filec, char * filev[])
 {
 	mpv_handle * mpv;
 	int error;
@@ -41,22 +49,24 @@ int mpvd(int filec, char * filev[])
 	int i;
 	const char * command_loadfile[] = { "loadfile", NULL, "append", NULL };
 
+	if(prefs != NULL && _mpvd_prefs(prefs) != 0)
+		return 2;
 	if((mpv = mpv_create()) == NULL)
 		return 2;
 	if((error = mpv_set_property(mpv, "shuffle", MPV_FORMAT_FLAG, &t)) != 0)
-		_mpvd_error(error, "shuffle");
+		_mpvd_error_mpv(error, "shuffle");
 	if((error = mpv_initialize(mpv)) != 0)
 	{
 		mpv_destroy(mpv);
-		return _mpvd_error(error, NULL);
+		return _mpvd_error_mpv(error, NULL);
 	}
 	if((error = mpv_set_property(mpv, "idle", MPV_FORMAT_FLAG, &t)) != 0)
-		_mpvd_error(error, "idle");
+		_mpvd_error_mpv(error, "idle");
 	for(i = 0; i < filec; i++)
 	{
 		command_loadfile[1] = filev[i];
 		if((error = mpv_command_async(mpv, 0, command_loadfile)) != 0)
-			_mpvd_error(error, filev[i]);
+			_mpvd_error_mpv(error, filev[i]);
 	}
 	while(_mpvd_event(mpv, mpv_wait_event(mpv, -1)) == 0);
 	mpv_destroy(mpv);
@@ -66,7 +76,18 @@ int mpvd(int filec, char * filev[])
 
 /* private */
 /* mpvd_error */
-static int _mpvd_error(int error, char const * message)
+static int _mpvd_error(char const * message)
+{
+	fprintf(stderr, "%s%s%s: %s\n", PROGNAME_MPVD,
+			(message != NULL) ? ": " : "",
+			(message != NULL) ? message : "",
+			strerror(errno));
+	return 2;
+}
+
+
+/* mpvd_error_mpv */
+static int _mpvd_error_mpv(int error, char const * message)
 {
 	fprintf(stderr, "%s%s%s: %s\n", PROGNAME_MPVD,
 			(message != NULL) ? ": " : "",
@@ -88,9 +109,9 @@ static int _mpvd_event(mpv_handle * mpv, mpv_event * event)
 	{
 		case MPV_EVENT_IDLE:
 			if((error = mpv_command(mpv, command_shuffle)) != 0)
-				_mpvd_error(error, "shuffle");
+				_mpvd_error_mpv(error, "shuffle");
 			if((error = mpv_command(mpv, command_play)) != 0)
-				_mpvd_error(error, "play");
+				_mpvd_error_mpv(error, "play");
 			break;
 		case MPV_EVENT_LOG_MESSAGE:
 			log_message = event->data;
@@ -100,6 +121,42 @@ static int _mpvd_event(mpv_handle * mpv, mpv_event * event)
 			return -1;
 		default:
 			break;
+	}
+	return 0;
+}
+
+
+/* mpvd_prefs */
+static int _mpvd_prefs(MPVDPrefs * prefs)
+{
+	struct passwd * pw = NULL;
+	struct group * gr = NULL;
+	FILE * fp = NULL;
+
+	if(prefs->username != NULL && (pw = getpwnam(prefs->username)) == NULL)
+		return _mpvd_error(prefs->username);
+	if(prefs->groupname != NULL
+			&& (gr = getgrnam(prefs->groupname)) == NULL)
+		return _mpvd_error(prefs->groupname);
+	if(prefs->pidfile != NULL && (fp = fopen(prefs->pidfile, "w")) == NULL)
+		return _mpvd_error(prefs->pidfile);
+	if(gr != NULL && setegid(gr->gr_gid) != 0)
+		_mpvd_error("setegid");
+	if(pw != NULL && seteuid(pw->pw_uid) != 0)
+		_mpvd_error("seteuid");
+	if(prefs->daemon && daemon(0, 0) != 0)
+	{
+		if(fp != NULL)
+			fclose(fp);
+		return _mpvd_error("daemon");
+	}
+	if(fp != NULL)
+	{
+		/* XXX check for errors */
+		fprintf(fp, "%u\n", getpid());
+		if(fclose(fp) != 0)
+			/* XXX should log instead */
+			_mpvd_error(prefs->pidfile);
 	}
 	return 0;
 }

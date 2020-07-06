@@ -15,10 +15,8 @@
 
 
 #include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 #include "mpvd.h"
 
 #ifndef PROGNAME_MPVD
@@ -29,7 +27,6 @@
 /* main */
 /* private */
 /* prototypes */
-static int _error(char const * message);
 static int _usage(void);
 
 
@@ -38,60 +35,40 @@ static int _usage(void);
 /* main */
 int main(int argc, char * argv[])
 {
-	const uid_t uid = 502;
-	const gid_t gid = 502;
-	char const * pidfile = "/var/run/" PROGNAME_MPVD ".pid";
+	MPVDPrefs prefs;
 	int o;
-	int daemonize = 1;
-	FILE * fp;
 
-	while((o = getopt(argc, argv, "Fp:")) != -1)
+	memset(&prefs, 0, sizeof(prefs));
+	prefs.daemon = 1;
+	prefs.username = PROGNAME_MPVD;
+	prefs.groupname = PROGNAME_MPVD;
+	prefs.pidfile = "/var/run/" PROGNAME_MPVD ".pid";
+	while((o = getopt(argc, argv, "Fg:p:u:")) != -1)
 		switch(o)
 		{
 			case 'F':
-				daemonize = 0;
+				prefs.daemon = 0;
+				break;
+			case 'g':
+				prefs.groupname = optarg;
 				break;
 			case 'p':
-				pidfile = optarg;
+				prefs.pidfile = optarg;
+				break;
+			case 'u':
+				prefs.username = optarg;
 				break;
 			default:
 				return _usage();
 		}
 	if(optind == argc)
 		return _usage();
-	if(daemonize)
-	{
-		if(daemon(0, 0) != 0)
-			return _error("daemon");
-		if((fp = fopen(pidfile, "w")) == NULL)
-			_error(pidfile);
-		else
-		{
-			fprintf(fp, "%u\n", getpid());
-			if(fclose(fp) != 0)
-				_error(pidfile);
-		}
-		if(setegid(gid) != 0)
-			_error("setegid");
-		if(seteuid(uid) != 0)
-			_error("seteuid");
-	}
-	return mpvd(argc - optind, &argv[optind]);
+	return mpvd(&prefs, argc - optind, &argv[optind]);
 }
 
 
 /* private */
 /* functions */
-static int _error(char const * message)
-{
-	fprintf(stderr, "%s%s%s: %s\n", PROGNAME_MPVD,
-			(message != NULL) ? ": " : "",
-			(message != NULL) ? message : "",
-			strerror(errno));
-	return 2;
-}
-
-
 /* usage */
 static int _usage(void)
 {

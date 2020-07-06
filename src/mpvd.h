@@ -18,7 +18,18 @@
 # define MPVD_MPVD_H
 
 
+/* MPVD */
+/* types */
+typedef struct _MPVDPrefs
+{
+	int daemon;
+	char const * username;
+	char const * groupname;
+	char const * pidfile;
+} MPVDPrefs;
+
+
 /* functions */
-int mpvd(int filec, char * filev[]);
+int mpvd(MPVDPrefs * prefs, int filec, char * filev[]);
 
 #endif
