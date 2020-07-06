@@ -20,6 +20,7 @@
 #include <string.h>
 #include <grp.h>
 #include <pwd.h>
+#include <syslog.h>
 #include <errno.h>
 #include <mpv/client.h>
 #include "mpvd.h"
@@ -100,6 +101,11 @@ static int _mpvd_error_mpv(int error, char const * message)
 
 
 /* mpvd_event */
+static void _event_log_message(MPVDPrefs * prefs,
+		mpv_event_log_message * log_message);
+static void _event_log_message_stdio(mpv_event_log_message * log_message);
+static void _event_log_message_syslog(mpv_event_log_message * log_message);
+
 static int _mpvd_event(MPVDPrefs * prefs, mpv_handle * mpv, mpv_event * event)
 {
 	mpv_event_log_message * log_message;
@@ -119,7 +125,7 @@ static int _mpvd_event(MPVDPrefs * prefs, mpv_handle * mpv, mpv_event * event)
 			break;
 		case MPV_EVENT_LOG_MESSAGE:
 			log_message = event->data;
-			printf("%s: %s\n", PROGNAME_MPVD, log_message->text);
+			_event_log_message(prefs, log_message);
 			break;
 		case MPV_EVENT_SHUTDOWN:
 			return -1;
@@ -127,6 +133,63 @@ static int _mpvd_event(MPVDPrefs * prefs, mpv_handle * mpv, mpv_event * event)
 			break;
 	}
 	return 0;
+}
+
+static void _event_log_message(MPVDPrefs * prefs,
+		mpv_event_log_message * log_message)
+{
+	if(prefs != NULL && prefs->daemon != 0)
+		_event_log_message_syslog(log_message);
+	else
+		_event_log_message_stdio(log_message);
+}
+
+static void _event_log_message_stdio(mpv_event_log_message * log_message)
+{
+	FILE * fp;
+
+	switch(log_message->log_level)
+	{
+		case MPV_LOG_LEVEL_ERROR:
+		case MPV_LOG_LEVEL_FATAL:
+		case MPV_LOG_LEVEL_WARN:
+			fp = stderr;
+			break;
+		default:
+			fp = stdout;
+			break;
+	}
+	fprintf(fp, "%s: %s\n", PROGNAME_MPVD, log_message->text);
+}
+
+static void _event_log_message_syslog(mpv_event_log_message * log_message)
+{
+	int priority;
+
+	switch(log_message->log_level)
+	{
+		case MPV_LOG_LEVEL_NONE:
+			return;
+		case MPV_LOG_LEVEL_DEBUG:
+		case MPV_LOG_LEVEL_TRACE:
+			priority = LOG_DEBUG;
+			break;
+		case MPV_LOG_LEVEL_ERROR:
+			priority = LOG_ERR;
+			break;
+		case MPV_LOG_LEVEL_FATAL:
+			priority = LOG_CRIT;
+			break;
+		case MPV_LOG_LEVEL_WARN:
+			priority = LOG_WARNING;
+			break;
+		case MPV_LOG_LEVEL_INFO:
+		case MPV_LOG_LEVEL_V:
+		default:
+			priority = LOG_INFO;
+			break;
+	}
+	syslog(priority, "%s", log_message->text);
 }
 
 
