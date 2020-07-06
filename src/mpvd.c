@@ -34,7 +34,7 @@
 /* prototypes */
 static int _mpvd_error(char const * message);
 static int _mpvd_error_mpv(int error, char const * message);
-static int _mpvd_event(mpv_handle * mpv, mpv_event * event);
+static int _mpvd_event(MPVDPrefs * prefs, mpv_handle * mpv, mpv_event * event);
 static int _mpvd_prefs(MPVDPrefs * prefs);
 
 
@@ -53,8 +53,10 @@ int mpvd(MPVDPrefs * prefs, int filec, char * filev[])
 		return 2;
 	if((mpv = mpv_create()) == NULL)
 		return 2;
-	if((error = mpv_set_property(mpv, "shuffle", MPV_FORMAT_FLAG, &t)) != 0)
-		_mpvd_error_mpv(error, "shuffle");
+	if(prefs != NULL && prefs->shuffle != 0)
+		if((error = mpv_set_property(mpv, "shuffle", MPV_FORMAT_FLAG,
+						&t)) != 0)
+			_mpvd_error_mpv(error, "shuffle");
 	if((error = mpv_initialize(mpv)) != 0)
 	{
 		mpv_destroy(mpv);
@@ -68,7 +70,7 @@ int mpvd(MPVDPrefs * prefs, int filec, char * filev[])
 		if((error = mpv_command_async(mpv, 0, command_loadfile)) != 0)
 			_mpvd_error_mpv(error, filev[i]);
 	}
-	while(_mpvd_event(mpv, mpv_wait_event(mpv, -1)) == 0);
+	while(_mpvd_event(prefs, mpv, mpv_wait_event(mpv, -1)) == 0);
 	mpv_destroy(mpv);
 	return 0;
 }
@@ -98,18 +100,20 @@ static int _mpvd_error_mpv(int error, char const * message)
 
 
 /* mpvd_event */
-static int _mpvd_event(mpv_handle * mpv, mpv_event * event)
+static int _mpvd_event(MPVDPrefs * prefs, mpv_handle * mpv, mpv_event * event)
 {
 	mpv_event_log_message * log_message;
-	char const * command_shuffle[] = { "playlist-shuffle", NULL };
 	char const * command_play[] = { "set", "playlist-pos", "0", NULL };
+	char const * command_shuffle[] = { "playlist-shuffle", NULL };
 	int error;
 
 	switch(event->event_id)
 	{
 		case MPV_EVENT_IDLE:
-			if((error = mpv_command(mpv, command_shuffle)) != 0)
-				_mpvd_error_mpv(error, "shuffle");
+			if(prefs != NULL && prefs->shuffle)
+				if((error = mpv_command(mpv, command_shuffle))
+						!= 0)
+					_mpvd_error_mpv(error, "shuffle");
 			if((error = mpv_command(mpv, command_play)) != 0)
 				_mpvd_error_mpv(error, "play");
 			break;

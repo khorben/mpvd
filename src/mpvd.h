@@ -26,6 +26,7 @@ typedef struct _MPVDPrefs
 	char const * username;
 	char const * groupname;
 	char const * pidfile;
+	int shuffle;
 } MPVDPrefs;
 
 

@@ -43,7 +43,7 @@ int main(int argc, char * argv[])
 	prefs.username = PROGNAME_MPVD;
 	prefs.groupname = PROGNAME_MPVD;
 	prefs.pidfile = "/var/run/" PROGNAME_MPVD ".pid";
-	while((o = getopt(argc, argv, "Fg:p:u:")) != -1)
+	while((o = getopt(argc, argv, "Fg:p:su:")) != -1)
 		switch(o)
 		{
 			case 'F':
@@ -54,6 +54,9 @@ int main(int argc, char * argv[])
 				break;
 			case 'p':
 				prefs.pidfile = optarg;
+				break;
+			case 's':
+				prefs.shuffle = 1;
 				break;
 			case 'u':
 				prefs.username = optarg;
