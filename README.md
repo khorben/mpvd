@@ -2,7 +2,7 @@ mpvd
 ====
 
 About mpvd
--------------
+----------
 
 mpvd is a background service to play music with the `mpv(1)` media player.
 
