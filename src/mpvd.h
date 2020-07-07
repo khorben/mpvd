@@ -33,4 +33,4 @@ typedef struct _MPVDPrefs
 /* functions */
 int mpvd(MPVDPrefs * prefs, int filec, char * filev[]);
 
-#endif
+#endif /* !MPVD_MPVD_H */

@@ -23,4 +23,4 @@
 # define PROGNAME_MPVD	"mpvd"
 #endif
 
-#endif
+#endif /* !MPVD_COMMON_H */
