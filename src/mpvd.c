@@ -23,11 +23,8 @@
 #include <syslog.h>
 #include <errno.h>
 #include <mpv/client.h>
+#include "common.h"
 #include "mpvd.h"
-
-#ifndef PROGNAME_MPVD
-# define PROGNAME_MPVD	"mpvd"
-#endif
 
 
 /* MPVD */

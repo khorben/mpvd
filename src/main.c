@@ -17,11 +17,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include "common.h"
 #include "mpvd.h"
-
-#ifndef PROGNAME_MPVD
-# define PROGNAME_MPVD	"mpvd"
-#endif
 
 
 /* main */
