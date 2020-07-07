@@ -72,8 +72,11 @@ int main(int argc, char * argv[])
 /* usage */
 static int _usage(void)
 {
-	fputs("Usage: " PROGNAME_MPVD " [-F][-p filename] file...\n"
+	fputs("Usage: " PROGNAME_MPVD " [-Fs][-p filename][-u username][-g group] file...\n"
 			"  -F	Run in foreground\n"
-			"  -p	Set the PID file\n", stderr);
+			"  -g	Use the privileges of this group\n"
+			"  -p	Set the PID file\n"
+			"  -s	Shuffle the playlist\n"
+			"  -u	Use the privileges of this user\n", stderr);
 	return 1;
 }
