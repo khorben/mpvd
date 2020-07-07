@@ -207,9 +207,9 @@ static int _mpvd_prefs(MPVDPrefs * prefs)
 		return _mpvd_error(prefs->groupname);
 	if(prefs->pidfile != NULL && (fp = fopen(prefs->pidfile, "w")) == NULL)
 		return _mpvd_error(prefs->pidfile);
-	if(gr != NULL && setegid(gr->gr_gid) != 0)
+	if(gr != NULL && (setgid(gr->gr_gid) != 0 || setegid(gr->gr_gid) != 0))
 		_mpvd_error("setegid");
-	if(pw != NULL && seteuid(pw->pw_uid) != 0)
+	if(pw != NULL && (setuid(pw->pw_uid) != 0 || seteuid(pw->pw_uid) != 0))
 		_mpvd_error("seteuid");
 	if(prefs->daemon && daemon(0, 0) != 0)
 	{
