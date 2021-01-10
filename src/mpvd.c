@@ -199,6 +199,7 @@ static int _mpvd_prefs(MPVDPrefs const * prefs)
 	struct group * gr = NULL;
 	uid_t uid;
 	gid_t gid;
+	size_t len;
 	FILE * fp = NULL;
 
 	/* lookup the target user if set */
@@ -218,6 +219,11 @@ static int _mpvd_prefs(MPVDPrefs const * prefs)
 	}
 	else if(pw != NULL && (gr = getgrgid(gid)) == NULL)
 		return _mpvd_error("getgrgid");
+	/* prepare the environment */
+	if(pw != NULL && pw->pw_dir != NULL && (len = strlen(pw->pw_dir)) > 0)
+		/* set $HOME */
+		if(setenv("HOME", pw->pw_dir, 1) != 0)
+			return _mpvd_error("setenv");
 	/* open the PID file before dropping permissions */
 	if(prefs->pidfile != NULL && (fp = fopen(prefs->pidfile, "w")) == NULL)
 		return _mpvd_error(prefs->pidfile);
