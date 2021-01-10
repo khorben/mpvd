@@ -33,7 +33,7 @@
 static int _mpvd_error(char const * message);
 static int _mpvd_error_mpv(int error, char const * message);
 static int _mpvd_event(MPVDPrefs * prefs, mpv_handle * mpv, mpv_event * event);
-static int _mpvd_prefs(MPVDPrefs * prefs);
+static int _mpvd_prefs(MPVDPrefs const * prefs);
 
 
 /* public */
@@ -191,29 +191,60 @@ static void _event_log_message_syslog(mpv_event_log_message * log_message)
 
 
 /* mpvd_prefs */
-static int _mpvd_prefs(MPVDPrefs * prefs)
+static int _prefs_setgroups(char const * username);
+
+static int _mpvd_prefs(MPVDPrefs const * prefs)
 {
 	struct passwd * pw = NULL;
 	struct group * gr = NULL;
+	uid_t uid;
+	gid_t gid;
 	FILE * fp = NULL;
 
-	if(prefs->username != NULL && (pw = getpwnam(prefs->username)) == NULL)
-		return _mpvd_error(prefs->username);
-	if(prefs->groupname != NULL
-			&& (gr = getgrnam(prefs->groupname)) == NULL)
-		return _mpvd_error(prefs->groupname);
+	/* lookup the target user if set */
+	if(prefs->username != NULL)
+	{
+		if((pw = getpwnam(prefs->username)) == NULL)
+			return _mpvd_error(prefs->username);
+		uid = pw->pw_uid;
+		gid = pw->pw_gid;
+	}
+	/* lookup the target group */
+	if(prefs->groupname != NULL)
+	{
+		if((gr = getgrnam(prefs->groupname)) == NULL)
+			return _mpvd_error(prefs->groupname);
+		gid = gr->gr_gid;
+	}
+	else if(pw != NULL && (gr = getgrgid(gid)) == NULL)
+		return _mpvd_error("getgrgid");
+	/* open the PID file before dropping permissions */
 	if(prefs->pidfile != NULL && (fp = fopen(prefs->pidfile, "w")) == NULL)
 		return _mpvd_error(prefs->pidfile);
-	if(gr != NULL && (setgid(gr->gr_gid) != 0 || setegid(gr->gr_gid) != 0))
-		_mpvd_error("setegid");
-	if(pw != NULL && (setuid(pw->pw_uid) != 0 || seteuid(pw->pw_uid) != 0))
-		_mpvd_error("seteuid");
+	/* set the groups and user if set */
+	if(gr != NULL)
+	{
+		if(setgid(gid) != 0)
+			_mpvd_error("setgid");
+		if(setegid(gid) != 0)
+			_mpvd_error("setegid");
+	}
+	if(prefs->username != NULL)
+	{
+		_prefs_setgroups(prefs->username);
+		if(setuid(uid) != 0)
+			_mpvd_error("setuid");
+		if(seteuid(uid) != 0)
+			_mpvd_error("seteuid");
+	}
+	/* actually mpvd */
 	if(prefs->daemon && daemon(0, 0) != 0)
 	{
 		if(fp != NULL)
 			fclose(fp);
 		return _mpvd_error("daemon");
 	}
+	/* write the PID file */
 	if(fp != NULL)
 	{
 		/* XXX check for errors */
@@ -223,4 +254,36 @@ static int _mpvd_prefs(MPVDPrefs * prefs)
 			_mpvd_error(prefs->pidfile);
 	}
 	return 0;
+}
+
+static int _prefs_setgroups(char const * username)
+{
+	int ret;
+	struct group * gr;
+	int i;
+	int n = 0;
+	gid_t * groups = NULL;
+	gid_t * p;
+
+	setgroupent(1);
+	while((gr = getgrent()) != NULL)
+		for(i = 0; gr->gr_mem[i] != NULL; i++)
+		{
+			if(strcmp(gr->gr_mem[i], username) != 0)
+				continue;
+			if((p = realloc(groups, sizeof(*groups) * (n + 1)))
+					== NULL)
+			{
+				free(groups);
+				return _mpvd_error("realloc");
+			}
+			groups = p;
+			groups[n++] = gr->gr_gid;
+		}
+	endgrent();
+	ret = setgroups(n, groups);
+	free(groups);
+	if(ret != 0)
+		_mpvd_error("setgroups");
+	return ret;
 }
