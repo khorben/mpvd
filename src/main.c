@@ -36,13 +36,19 @@ int main(int argc, char * argv[])
 	int o;
 
 	memset(&prefs, 0, sizeof(prefs));
-	prefs.daemon = 1;
-	prefs.username = PROGNAME_MPVD;
-	prefs.groupname = PROGNAME_MPVD;
-	prefs.pidfile = "/var/run/" PROGNAME_MPVD ".pid";
-	while((o = getopt(argc, argv, "Fg:p:su:")) != -1)
+	if(getuid() == 0)
+	{
+		prefs.daemon = 1;
+		prefs.username = PROGNAME_MPVD;
+		prefs.groupname = PROGNAME_MPVD;
+		prefs.pidfile = "/var/run/" PROGNAME_MPVD ".pid";
+	}
+	while((o = getopt(argc, argv, "BFg:p:su:")) != -1)
 		switch(o)
 		{
+			case 'B':
+				prefs.daemon = 1;
+				break;
 			case 'F':
 				prefs.daemon = 0;
 				break;
@@ -72,7 +78,8 @@ int main(int argc, char * argv[])
 /* usage */
 static int _usage(void)
 {
-	fputs("Usage: " PROGNAME_MPVD " [-Fs][-p filename][-u username][-g group] file...\n"
+	fputs("Usage: " PROGNAME_MPVD " [-BFs][-p filename][-u username][-g group] file...\n"
+			"  -B	Run in background\n"
 			"  -F	Run in foreground\n"
 			"  -g	Use the privileges of this group\n"
 			"  -p	Set the PID file\n"
