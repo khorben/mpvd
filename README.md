@@ -6,7 +6,8 @@ About mpvd
 
 mpvd is a background service to play music with the `mpv(1)` media player.
 
-mpvd is distributed under the terms of the GNU GPL License (version 3).
+mpvd is distributed under the terms of the 2-clause BSD license. Please refer
+to the `COPYING` file for more information.
 
 
 Compiling mpvd
