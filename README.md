@@ -15,7 +15,7 @@ Compiling mpvd
 
 mpvd depends on the following components:
 
- * libmpv from the mpv project
+ * libmpv from the mpv project, found at <https://mpv.io>
 
 With GCC, this should then be enough to compile and install mpvd:
 
