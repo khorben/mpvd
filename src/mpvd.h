@@ -1,5 +1,5 @@
 /* $Id$ */
-/* Copyright (c) 2020 Pierre Pronchery <khorben@defora.org> */
+/* Copyright (c) 2020-2021 Pierre Pronchery <khorben@defora.org> */
 /* This file is part of mpvd */
 /* All rights reserved.
  *
